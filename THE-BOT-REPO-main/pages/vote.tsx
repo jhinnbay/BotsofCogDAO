@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import styles from "../styles/Home.module.css";
 import { useContract, useContractRead, useContractWrite } from "@thirdweb-dev/react";
+import { useQuery, gql } from '@apollo/client';
 
 const CONTRACT_ADDRESS = "0xC432013CbA34F5202c3cAf109d3456d3b97e11bB";
 
@@ -19,11 +20,27 @@ const proposalStateMapping = [
   "Pending", "Active", "Canceled", "Defeated", "Succeeded", "Queued", "Expired", "Executed"
 ];
 
+const GET_SPACES = gql`
+query {
+  space(id: "radiantcapital.eth") {
+    id
+    name
+    about
+    network
+    symbol
+    members
+  }
+}
+`
+
 export default function Home() {
   const router = useRouter();
   const { contract } = useContract(CONTRACT_ADDRESS);
   const { data: proposals } = useContractRead(contract, "getAllProposals", []);
   const { mutateAsync: castVote, isLoading } = useContractWrite(contract, "castVote");
+
+  const {loading, error, data} = useQuery(GET_SPACES)
+  console.log(data)
 
   const handleVote = async (proposalId: number, support: boolean) => {
     try {
