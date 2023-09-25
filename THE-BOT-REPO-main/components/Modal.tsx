@@ -10,30 +10,28 @@ interface modalProps {
 }
 
 export default function Modal({ isOpen, setIsOpen, children }: modalProps) {
-  // eslint-disable-next-line react/no-children-prop
-  const element = children;
 
-  useEffect(() => {
-    const handleEscape = (event: any) => {
-      if (event.key === "Escape") {
-        setIsOpen(false)
-      }
-    };
+  // useEffect(() => {
+  //   const handleEscape = (event: any) => {
+  //     if (event.key === "Escape") {
+  //       setIsOpen(false)
+  //     }
+  //   };
 
-    const handleOutsideClick = (event: any) => {
-      if (!event.target.closest(".modal-container")) {
-        setIsOpen(false);
-      }
-    };
+  //   const handleOutsideClick = (event: any) => {
+  //     if (!event.target.closest(".modal-container")) {
+  //       setIsOpen(false);
+  //     }
+  //   };
 
-    window.addEventListener("keydown", handleEscape);
-    window.addEventListener("mousedown", handleOutsideClick);
+  //   window.addEventListener("keydown", handleEscape);
+  //   window.addEventListener("mousedown", handleOutsideClick);
 
-    return () => {
-      window.removeEventListener("keydown", handleEscape);
-      window.removeEventListener("mousedown", handleOutsideClick);
-    };
-  }, []);
+  //   return () => {
+  //     window.removeEventListener("keydown", handleEscape);
+  //     window.removeEventListener("mousedown", handleOutsideClick);
+  //   };
+  // }, []);
 
   return (
     <>
@@ -42,7 +40,7 @@ export default function Modal({ isOpen, setIsOpen, children }: modalProps) {
           style={{position: 'fixed', zIndex: 9999, left: 0, top: 0, width: '100%', height: '100%', backgroundColor: "rgba(0,0,0,0.5)", display: 'flex', alignItems: 'center', justifyContent: 'center'}}
         >
           <div className="modal-container" style={{backgroundColor: "#222", marginLeft: 'auto', marginRight: 'auto', padding: "30px 50px", position: 'relative', borderRadius: "20px", maxHeight: "90vh", display: 'flex', alignItems: 'center', justifyItems: 'center', flexDirection: 'column'}}>
-            {element}
+            {children}
           </div>
         </div>
       }

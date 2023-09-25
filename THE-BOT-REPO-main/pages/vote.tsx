@@ -234,6 +234,7 @@ export default function Home() {
                             // }}
                             // style={{backgroundColor: (proposalSelected == proposalIndex && choiceSelected == choiceIndex)?"rgba(255,255,255,0.2)":"rgba(255,255,255,0)"}}
                             className={styles.proposalButton}
+                            style={votes[proposalIndex] == choiceIndex + 1 ? {backgroundColor: "rgba(255,255,255,0.2)"}:{}}
                           >
                             {choiceIndex + 1 == votes[proposalIndex] && <IoCheckmarkOutline size={18}/>}
                             <p style={{margin: 0, marginRight: 'auto'}}>
