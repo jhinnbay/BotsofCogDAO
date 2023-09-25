@@ -13,6 +13,7 @@ body {
   text-rendering: optimizeSpeed;
   line-height: 1.5;
   padding-bottom: 250px;
+  overflow-x: hidden;
 }
 
 button {
@@ -26,8 +27,12 @@ button {
   margin-top: 1rem;
   flex-basis: 45%;
   display: inline-block;
+  cursor: pointer;
 }
-
+#__next {
+  width: 100%;
+  padding: 0px;
+}
 /* Inherit fonts for inputs and buttons */
 input,
 button,
@@ -50,6 +55,11 @@ body {
   display: flex;
   margin: 0;
   text-align: center;
+  width: 100vw;
+}
+
+._next {
+  width: 100vw;
 }
 
 h2 {

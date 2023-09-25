@@ -65,9 +65,9 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding-left: 12px;
-  padding-right: 12px;
+  padding: 25px;
   margin-bottom: 18px;
+  
 }
 .optionSelectBox2 {
   border-radius: 16px;
@@ -200,22 +200,6 @@
   width: 100%;
   max-height: 300px;
   border-radius: 15px;
-}
-
-.proposalContainer {
-  max-width: 300px;
-  min-width: 200px;
-  min-height: 200px;
-  align-items: center;
-  justify-content: center;
-  padding-left: 100px;
-  padding-right: 100px;
-  margin-bottom: 10px;
-  cursor: pointer;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: repeat(3, auto);
-  grid-gap: 10px;
 }
 
 .overlay {
@@ -365,4 +349,22 @@
 
 .redBackground {
   background-color: rgba(19, 48, 75, 0.63);
+}
+
+.proposalButton {
+  flex-grow: 1;
+  justify-content: space-between;
+  padding: 10px 20px;
+  align-items: center;
+  border-radius: 30px;
+  background-color: rgba(255,255,255,0);
+  border: 0.5px rgba(255,255,255,0.5) solid;
+  color: white;
+  display: flex;
+  flex-direction: row;
+  transition: background-color 0.5s;
+  gap: 10px;
+}
+.proposalButton:hover {
+  background-color: rgba(255,255,255,0.2);
 }

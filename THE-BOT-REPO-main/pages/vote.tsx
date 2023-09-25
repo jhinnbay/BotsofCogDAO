@@ -7,6 +7,8 @@ import GetVotingPower from "../components/GetVotingPower";
 import snapshot from '@snapshot-labs/snapshot.js'
 import moment from "moment";
 
+
+
 interface Proposal {
   id: number,
   title: string,
@@ -97,22 +99,25 @@ export default function Home() {
   const proposalsQuery = useQuery(GET_PROPOSALS).data
   const [hasVoted, setHasVoted] = useState<boolean[]>([])
   const [votingPower, setVotingPower] = useState<number[]>([])
+  const [proposalSelected, setProposalSelected] = useState<number | null>(null)
+  const [choiceSelected, setChoiceSelected] = useState<number | null>(null)
+
   
   // console.log(web3)
   // console.log(address)
   console.log(proposalsQuery)
-  console.log(moment(proposalsQuery?.proposals[0].start * 1000).format("MMM DD, YYYY"))
+  // console.log(moment(proposalsQuery?.proposals[0].start * 1000).format("MMM DD, YYYY"))
   // console.log(votingPower)
   
 
   const handleVote = async (proposalIndex: number, choiceIndex: number) => {
     const proposalID = proposalsQuery?.proposals[proposalIndex].id
+    setProposalSelected(proposalIndex)
+    setChoiceSelected(choiceIndex)
 
-    
-    // VOTING LOGIC HERE
     try {
       if (web3) {
-        const receipt = await client.vote(web3, address?address:"", {
+        await client.vote(web3, address?address:"", {
           space: 'jonomnom.eth',
           proposal: proposalID,
           type: 'single-choice',
@@ -120,49 +125,77 @@ export default function Home() {
           reason: '',
           app: 'snapshot'
         })
+        console.log("TESTTTT")
+        //only do this if vote suceeded
         let tempChoices = [...hasVoted]
         tempChoices[proposalIndex] = true
         setHasVoted(tempChoices)
       }
     } catch (e) {
       console.log(e)
+      setProposalSelected(null)
+      setChoiceSelected(null)
     }
       
       
   }
 
   return (
-    <div className={styles.container}>
+    <div style={{width: '100%', padding: '5% 10%', textAlign: 'left', color: 'white'}}>
       {!address ? <ConnectWallet/>:
         <>
-          <h1 className={styles.h1}>COMING SOON</h1>
-          <div className={styles.nftBoxGrid}>
+        <h1>Proposals</h1>
+          <div style={{display: 'flex', flexDirection: 'column', width: '100%', gap: '20px', marginTop: "50px"}}>
             {proposalsQuery?.proposals?.map((proposal: Proposal, proposalIndex: number) => {
-              
               return (
-                <div key={proposalIndex} className={styles.optionSelectBox}>
-                  <h2 className={styles.selectBoxTitle}>{proposal.title}</h2>
-                  <p> {proposal.state}</p>
-                  <p className={styles.selectBoxDescription}>{proposal.body}</p>
+                <div key={proposalIndex} style={{backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: "20px",  gap: "30px", display: 'flex', flexDirection: 'row', width: '100%', justifyContent: 'space-between', padding: '50px 60px', height: 'fit-content'}}>
+                  <GetVotingPower votingPower={votingPower} setVotingPower={setVotingPower} address={address} proposalID={proposalsQuery?.proposals[proposalIndex].id} index={proposalIndex}/>
+                  <div key={proposalIndex} style={{flexWrap: 'wrap', gap: "30px", display: 'flex', flexDirection: 'column', justifyContent: 'space-between', flexGrow: 1}}>
+                    <div style={{lineHeight: "30px"}}>
+                      <h3 style={{margin: "0px"}}>{proposal.title}</h3>
+                      <p style={{margin: "5px 0px 15px 0px", color: '#BBB', fontSize: '14px'}}> 
+                        Created by {proposal.author.substring(0, 5) + '...' + address.substring(address.length - 5, address.length - 1)}
+                      </p>
+                      <p>{proposal.body} </p>
+                    </div>
 
-                  {proposalsQuery?.proposals.map((proposal: Proposal, index: number) => {
-                    return (
-                      <GetVotingPower key={index} votingPower={votingPower} setVotingPower={setVotingPower} address={address} proposalID={proposalsQuery?.proposals[index].id} index={index}/>
-                    )
-                  })}
+                    <div style={{display: 'flex', flexDirection: 'column', flexGrow: 1}}>
+                      {proposal.choices.map((choice, choiceIndex) => {
+                        return (
+                          <button 
+                            key={choiceIndex} 
+                            onClick={() => {handleVote(proposalIndex, choiceIndex)}}
+                            // onMouseEnter={() => {
 
-                  {proposal.choices.map((choice, choiceIndex) => {
-                    return (
-                      hasVoted[proposalIndex]?
-                        <div key={choiceIndex}>
-                          {choice}: {Math.floor(proposal.scores[choiceIndex])} votes
-                        </div>:
-                        <button key={choiceIndex} onClick={() => {handleVote(proposalIndex, choiceIndex)}}>
-                          {choice}
-                        </button>
-                    )
-                  })}
-                </div> 
+                            // }}
+                            // onMouseLeave={() => {
+
+                            // }}
+                            // style={{backgroundColor: (proposalSelected == proposalIndex && choiceSelected == choiceIndex)?"rgba(255,255,255,0.2)":"rgba(255,255,255,0)"}}
+                            className={styles.proposalButton}>
+                              <p style={{margin: 0}}>
+                                {choice}
+                              </p>
+                            <div key={choiceIndex}>
+                              {Math.floor(proposal.scores[choiceIndex])} votes
+                            </div>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                  {/* <div style={{width: '0.5px', backgroundColor: 'rgba(255,255,255,0.5)', alignSelf: 'stretch'}}/> */}
+                  <div style={{ whiteSpace: 'nowrap', backgroundColor: 'rgba(255,255,255,0.05)', padding: '20px 30px', borderRadius: "20px", display: 'flex', justifyContent: 'space-between', gap: "20px"}}>
+                    <div style={{color: '#BBB',}}>
+                      <p>Start Date </p>
+                      <p>End Date </p>
+                    </div>
+                    <div>
+                      <p>{moment(proposal.start * 1000).format("lll")}</p>
+                      <p>{moment(proposal.end * 1000).format("lll")}</p>
+                    </div>
+                  </div>
+                </div>
               )
             })}
           </div>
