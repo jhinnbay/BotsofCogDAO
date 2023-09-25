@@ -3,11 +3,12 @@ import { useRouter } from "next/router";
 import styles from "../styles/Home.module.css";
 import { useContract, useContractRead, useContractWrite, useAddress, ConnectWallet, useSDK, ThirdwebProvider } from "@thirdweb-dev/react";
 import { useQuery, gql, useLazyQuery } from '@apollo/client';
-import GetVotingPower from "../components/GetVotingPower";
+import GetProposalInfo from "../components/GetProposalInfo";
 import snapshot from '@snapshot-labs/snapshot.js'
 import moment from "moment";
-
-
+import Modal from "../components/Modal";
+import { IoExitOutline, IoCheckmarkOutline, IoCheckmarkCircleOutline, IoArrowBackOutline } from "react-icons/io5"
+import Loading from "../components/Loading";
 
 interface Proposal {
   id: number,
@@ -74,19 +75,7 @@ const GET_PROPOSALS = gql`
     }
   }
 `
-const GET_VOTING_POWER = gql`
-  query VP($voter: String!, $proposal: String!){
-    vp (
-      space: "jonomnom.eth"
-      voter: $voter
-      proposal: $proposal
-      ) {
-        vp
-        vp_by_strategy
-        vp_state
-      } 
-  }
-`
+
 
 export default function Home() {
   const hub = 'https://hub.snapshot.org'; // or https://testnet.snapshot.org for testnet
@@ -96,24 +85,43 @@ export default function Home() {
   const sdk = useSDK()
   const web3 = sdk?.getSigner()?.provider
 
-  const proposalsQuery = useQuery(GET_PROPOSALS).data
-  const [hasVoted, setHasVoted] = useState<boolean[]>([])
+  const proposalsQuery = useQuery(GET_PROPOSALS)
+  const [votes, setVotes] = useState<number[]>([])
   const [votingPower, setVotingPower] = useState<number[]>([])
-  const [proposalSelected, setProposalSelected] = useState<number | null>(null)
-  const [choiceSelected, setChoiceSelected] = useState<number | null>(null)
+  const [voteSuccess, setVoteSuccess] = useState<boolean>(false)
+  const [modalIndex, setModalIndex] = useState<number>(0)
 
-  
-  // console.log(web3)
+  const [isOpen, setIsOpen] = useState<boolean>(false)
+
+  // console.log(votes)
   // console.log(address)
-  console.log(proposalsQuery)
-  // console.log(moment(proposalsQuery?.proposals[0].start * 1000).format("MMM DD, YYYY"))
+  // console.log(isOpen)
   // console.log(votingPower)
+  // console.log("PROPOSAL QUERY", proposalsQuery.data)
   
+
+  //formats numbers 
+  const nFormatter = (num: number, digits: number) => {
+    const lookup = [
+      { value: 1, symbol: "" },
+      { value: 1e3, symbol: "k" },
+      { value: 1e6, symbol: "M" },
+      { value: 1e9, symbol: "B" },
+      { value: 1e12, symbol: "T" },
+      { value: 1e15, symbol: "P" },
+      { value: 1e18, symbol: "E" }
+    ];
+    const rx = /\.0+$|(\.[0-9]*[1-9])0+$/;
+    var item = lookup.slice().reverse().find(function(item) {
+      return num >= item.value;
+    });
+    return item ? (num / item.value).toFixed(digits).replace(rx, "$1") + item.symbol : "0";
+  }
 
   const handleVote = async (proposalIndex: number, choiceIndex: number) => {
-    const proposalID = proposalsQuery?.proposals[proposalIndex].id
-    setProposalSelected(proposalIndex)
-    setChoiceSelected(choiceIndex)
+    const proposalID = proposalsQuery?.data.proposals[proposalIndex].id
+    setIsOpen(true)
+    setModalIndex(2)
 
     try {
       if (web3) {
@@ -125,41 +133,94 @@ export default function Home() {
           reason: '',
           app: 'snapshot'
         })
-        console.log("TESTTTT")
-        //only do this if vote suceeded
-        let tempChoices = [...hasVoted]
-        tempChoices[proposalIndex] = true
-        setHasVoted(tempChoices)
+        setModalIndex(0)
+        setVoteSuccess(true)
       }
     } catch (e) {
       console.log(e)
-      setProposalSelected(null)
-      setChoiceSelected(null)
+      setModalIndex(1)
     }
       
       
   }
 
+  useEffect(() => {
+    if (voteSuccess) {
+      proposalsQuery.refetch()
+      setVoteSuccess(false)
+    }
+  }, [voteSuccess])
+
   return (
-    <div style={{width: '100%', padding: '5% 10%', textAlign: 'left', color: 'white'}}>
+    <div style={{width: '100%', padding: '4% 8%', textAlign: 'left', color: 'white', position: 'relative'}}>
+      <Modal isOpen={isOpen} setIsOpen={setIsOpen}>
+        {modalIndex == 0 &&
+          <>
+            <h3>Your Vote is In!</h3>
+            <button
+              onClick={() => {setIsOpen(false)}}
+              style={{width: '100%', backgroundColor: "rgba(255,255,255,0)", color: 'white', border: '1px solid rgba(255,255,255,0.5)'}}  
+            >
+              Close
+            </button>
+          </>
+        }
+        {modalIndex == 1 &&
+          <>
+            <h3 style={{marginTop: 5}}>Failed to vote</h3>
+            <button
+              onClick={() => {setIsOpen(false)}}
+              style={{width: '100%', backgroundColor: "rgba(255,255,255,0)", color: 'white', border: '1px solid rgba(255,255,255,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: "10px"}}  
+            >
+              Close
+            </button>
+          </>
+        }
+        {modalIndex == 2 &&
+          <Loading/>
+        }
+      </Modal>
       {!address ? <ConnectWallet/>:
         <>
-        <h1>Proposals</h1>
+          <button onClick={router.back} style={{backgroundColor: 'rgba(255,255,255,0.1)', padding: "10px", borderRadius: "100px", height: 'fit-content', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+            <IoArrowBackOutline size={25} color="white"/>
+          </button>
+          <h1 style={{  wordWrap: "break-word"}}>Proposals</h1>
           <div style={{display: 'flex', flexDirection: 'column', width: '100%', gap: '20px', marginTop: "50px"}}>
-            {proposalsQuery?.proposals?.map((proposal: Proposal, proposalIndex: number) => {
+            {proposalsQuery?.data?.proposals?.map((proposal: Proposal, proposalIndex: number) => {
               return (
-                <div key={proposalIndex} style={{backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: "20px",  gap: "30px", display: 'flex', flexDirection: 'row', width: '100%', justifyContent: 'space-between', padding: '50px 60px', height: 'fit-content'}}>
-                  <GetVotingPower votingPower={votingPower} setVotingPower={setVotingPower} address={address} proposalID={proposalsQuery?.proposals[proposalIndex].id} index={proposalIndex}/>
+                <div key={proposalIndex} className={styles.proposalContainer}>
+                  
+                  {/* dont ask me why this components isnt returning any jsx if it works it works :) */}
+                  <GetProposalInfo voteSuccess={voteSuccess} setVotes={setVotes} votingPower={votingPower} setVotingPower={setVotingPower} address={address} proposalID={proposalsQuery?.data?.proposals[proposalIndex].id} index={proposalIndex}/>
+                  
+                  {/* Left Column */}
                   <div key={proposalIndex} style={{flexWrap: 'wrap', gap: "30px", display: 'flex', flexDirection: 'column', justifyContent: 'space-between', flexGrow: 1}}>
                     <div style={{lineHeight: "30px"}}>
-                      <h3 style={{margin: "0px"}}>{proposal.title}</h3>
-                      <p style={{margin: "5px 0px 15px 0px", color: '#BBB', fontSize: '14px'}}> 
-                        Created by {proposal.author.substring(0, 5) + '...' + address.substring(address.length - 5, address.length - 1)}
-                      </p>
+                      <div style={{display: 'flex', flexDirection: 'row', justifyContent: 'space-between', gap: "10px", flexWrap: 'wrap'}}>
+
+                        <div>
+                          {/* Proposal Title */}
+                          <h3 style={{margin: "0px"}}>{proposal.title}</h3>
+                          {/* Author */}
+                          <p style={{margin: "5px 0px 15px 0px", color: '#BBB', fontSize: '14px'}}> 
+                            Created by {proposal.author.substring(0, 5) + '...' + address.substring(address.length - 5, address.length - 1)}
+                          </p>
+                        </div>
+
+                        {/* Proposal State */}
+                        <div style={{marginBottom: "20px", height: 'fit-content', backgroundColor: proposal.state == "active"?'rgba(102,190,101, 1)':'rgba(235,102,101, 1)', color: 'white', fontSize: "12px", fontWeight: 'bold', padding: "5px 15px", borderRadius: "10px"}}>
+                          <p style={{margin: "0px"}}>
+                            {proposal.state.toUpperCase()}
+                          </p>
+                        </div>
+                      </div>
+
                       <p>{proposal.body} </p>
                     </div>
 
-                    <div style={{display: 'flex', flexDirection: 'column', flexGrow: 1}}>
+                    {/* Choices */}
+                    <div style={{display: 'flex', flexDirection: 'column', flexGrow: 1, gap: "15px"}}>
                       {proposal.choices.map((choice, choiceIndex) => {
                         return (
                           <button 
@@ -172,27 +233,38 @@ export default function Home() {
 
                             // }}
                             // style={{backgroundColor: (proposalSelected == proposalIndex && choiceSelected == choiceIndex)?"rgba(255,255,255,0.2)":"rgba(255,255,255,0)"}}
-                            className={styles.proposalButton}>
-                              <p style={{margin: 0}}>
-                                {choice}
-                              </p>
-                            <div key={choiceIndex}>
-                              {Math.floor(proposal.scores[choiceIndex])} votes
+                            className={styles.proposalButton}
+                          >
+                            {choiceIndex + 1 == votes[proposalIndex] && <IoCheckmarkOutline size={18}/>}
+                            <p style={{margin: 0, marginRight: 'auto'}}>
+                              {choice}
+                            </p>
+                            <div>
+                              {nFormatter(proposal.scores[choiceIndex], 1)} votes
                             </div>
                           </button>
                         )
                       })}
                     </div>
                   </div>
-                  {/* <div style={{width: '0.5px', backgroundColor: 'rgba(255,255,255,0.5)', alignSelf: 'stretch'}}/> */}
-                  <div style={{ whiteSpace: 'nowrap', backgroundColor: 'rgba(255,255,255,0.05)', padding: '20px 30px', borderRadius: "20px", display: 'flex', justifyContent: 'space-between', gap: "20px"}}>
-                    <div style={{color: '#BBB',}}>
+                  
+                  {/* Right Column */}
+                  <div style={{whiteSpace: 'nowrap', backgroundColor: 'rgba(255,255,255,0.05)', padding: '30px 3%', borderRadius: "20px", display: 'flex', justifyContent: 'space-between', gap: "20px", fontSize: "14px", width: '100%', maxWidth: "330px"}}>
+                    <div style={{color: '#BBB', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '20px', flexWrap: 'wrap'}}>
                       <p>Start Date </p>
                       <p>End Date </p>
+                      <p>Snapshot </p>
                     </div>
-                    <div>
+                    <div style={{display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '20px'}}>
                       <p>{moment(proposal.start * 1000).format("lll")}</p>
                       <p>{moment(proposal.end * 1000).format("lll")}</p>
+                      <a 
+                        style={{display: 'flex', alignItems: 'center', gap: "10px", color: 'white', textDecoration: 'none'}} 
+                        href={`https://etherscan.io/block/`+ proposal.snapshot} target="_blank" rel="noreferrer"
+                      >
+                        <p style={{margin: 0}}>{proposal.snapshot}</p>
+                        <IoExitOutline/>
+                      </a>
                     </div>
                   </div>
                 </div>
