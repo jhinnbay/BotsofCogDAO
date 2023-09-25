@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import styles from "../styles/Home.module.css";
-import { useContract, useContractRead, useContractWrite, useAddress, ConnectWallet } from "@thirdweb-dev/react";
+import { useContract, useContractRead, useContractWrite, useAddress, ConnectWallet, useSDK, ThirdwebProvider } from "@thirdweb-dev/react";
 import { useQuery, gql, useLazyQuery } from '@apollo/client';
 import GetVotingPower from "../components/GetVotingPower";
+import snapshot from '@snapshot-labs/snapshot.js'
+import moment from "moment";
 
 interface Proposal {
   id: number,
@@ -85,22 +87,48 @@ const GET_VOTING_POWER = gql`
 `
 
 export default function Home() {
+  const hub = 'https://hub.snapshot.org'; // or https://testnet.snapshot.org for testnet
+  const client = new snapshot.Client712(hub);
   const router = useRouter();
   const address = useAddress()
+  const sdk = useSDK()
+  const web3 = sdk?.getSigner()?.provider
+
   const proposalsQuery = useQuery(GET_PROPOSALS).data
-  console.log(proposalsQuery)
   const [hasVoted, setHasVoted] = useState<boolean[]>([])
   const [votingPower, setVotingPower] = useState<number[]>([])
-  const {loading, error, data} = useQuery(GET_VOTING_POWER, {variables: {voter: address, proposal: proposalsQuery?.proposals[0].id}})
+  
+  // console.log(web3)
+  // console.log(address)
+  console.log(proposalsQuery)
+  console.log(moment(proposalsQuery?.proposals[0].start * 1000).format("MMM DD, YYYY"))
+  // console.log(votingPower)
+  
 
-  console.log(votingPower)
+  const handleVote = async (proposalIndex: number, choiceIndex: number) => {
+    const proposalID = proposalsQuery?.proposals[proposalIndex].id
 
-  const handleVote = (proposalIndex: number, choiceIndex: number) => {
-    let tempChoices = [...hasVoted]
-    tempChoices[proposalIndex] = true
-    setHasVoted(tempChoices)
     
     // VOTING LOGIC HERE
+    try {
+      if (web3) {
+        const receipt = await client.vote(web3, address?address:"", {
+          space: 'jonomnom.eth',
+          proposal: proposalID,
+          type: 'single-choice',
+          choice: choiceIndex + 1,
+          reason: '',
+          app: 'snapshot'
+        })
+        let tempChoices = [...hasVoted]
+        tempChoices[proposalIndex] = true
+        setHasVoted(tempChoices)
+      }
+    } catch (e) {
+      console.log(e)
+    }
+      
+      
   }
 
   return (
