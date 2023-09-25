@@ -7,7 +7,7 @@ import { ApolloClient, InMemoryCache, ApolloProvider, gql } from '@apollo/client
 
 function MyApp({ Component, pageProps }: AppProps) {
   const client = new ApolloClient({
-    uri: 'https://testnet.snapshot.org/graphql',
+    uri: 'https://hub.snapshot.org/graphql',
     cache: new InMemoryCache(),
   });
 
