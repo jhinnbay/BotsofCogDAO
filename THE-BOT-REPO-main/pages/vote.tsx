@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import styles from "../styles/Home.module.css";
-import { useContract, useContractRead, useContractWrite, useAddress, ConnectWallet, useSDK, ThirdwebProvider } from "@thirdweb-dev/react";
+import { useContract, useContractRead, useContractWrite, useAddress, ConnectWallet, useSDK, ThirdwebProvider, useNFTBalance } from "@thirdweb-dev/react";
 import { useQuery, gql, useLazyQuery } from '@apollo/client';
 import GetProposalInfo from "../components/GetProposalInfo";
 import snapshot from '@snapshot-labs/snapshot.js'
@@ -72,6 +72,11 @@ const GET_PROPOSALS = gql`
         id
         name
       }
+      strategies {
+        name
+        network
+        params
+      }
     }
   }
 `
@@ -79,28 +84,43 @@ const GET_PROPOSALS = gql`
 
 export default function Home() {
   const hub = 'https://hub.snapshot.org'; // or https://testnet.snapshot.org for testnet
+  const contractAddress1 = "0x1bbca92fc889af891e3b666aee7cb3534b83d7b7"
+  const contractAddress2 = "0x8B9Ada84CBFBE266d103E6c90717Df789B63d0F7"
   const client = new snapshot.Client712(hub);
   const router = useRouter();
   const address = useAddress()
   const sdk = useSDK()
   const web3 = sdk?.getSigner()?.provider
 
+  const contract1 = useContract(contractAddress1)
+  const contract2 = useContract(contractAddress2)
+
   const proposalsQuery = useQuery(GET_PROPOSALS)
   const [votes, setVotes] = useState<number[]>([])
   const [votingPower, setVotingPower] = useState<number[]>([])
   const [voteSuccess, setVoteSuccess] = useState<boolean>(false)
   const [modalIndex, setModalIndex] = useState<number>(0)
+  // console.log(proposalsQuery?.data?.proposal)
+
+  const NFTBalance1 = useNFTBalance(
+    contract1.contract,
+    address,
+    0
+  )
+  const NFTBalance2 = useNFTBalance(
+    contract2.contract,
+    address,
+    0,
+  );
+  let balance1 = NFTBalance1?.data?parseInt(NFTBalance1.data._hex, 16):0
+  let balance2 = NFTBalance2?.data?parseInt(NFTBalance2.data._hex, 16):0
 
   const [isOpen, setIsOpen] = useState<boolean>(false)
-
-  // useEffect(() => {
-  //   console.log(votes)
-  // }, [votes])
 
   // console.log(address)
   // console.log(isOpen)
   // console.log(votingPower)
-  // console.log("PROPOSAL QUERY", proposalsQuery.data)
+  console.log("PROPOSAL QUERY", proposalsQuery.data)
   
 
   //formats numbers 
@@ -124,6 +144,11 @@ export default function Home() {
   const handleVote = async (proposalIndex: number, choiceIndex: number) => {
     const proposalID = proposalsQuery?.data.proposals[proposalIndex].id
     setIsOpen(true)
+
+    if (balance1 == 0 && balance2 == 0) {
+      setModalIndex(3)
+      return
+    }
     setModalIndex(2)
 
     try {
@@ -143,8 +168,6 @@ export default function Home() {
       console.log(e)
       setModalIndex(1)
     }
-      
-      
   }
 
   return (
@@ -175,13 +198,39 @@ export default function Home() {
         {modalIndex == 2 &&
           <Loading/>
         }
+        {modalIndex == 3 &&
+          <>
+            <h3>
+              Sorry, you need Gen 1 or Gen 2 NFTs in order to vote!
+            </h3>
+            <button
+                onClick={() => {setIsOpen(false)}}
+                style={{width: '100%', backgroundColor: "rgba(255,255,255,0)", color: 'rgba(255,166,0,1)', border: '1px solid rgba(255,166,0,0.5)', padding: "10px", borderRadius: "20px"}}  
+              >
+                Close
+              </button>
+          </>
+        }
       </Modal>
       {!address ? <ConnectWallet/>:
         <>
-          <button onClick={router.back} className={styles.backArrow}>
-            <IoArrowBackOutline size={25} color='rgba(255,166,0,1)'/>
-          </button>
+          <div style={{display: 'flex', flexDirection: 'row', justifyContent: 'space-between'}}>
+            <button onClick={router.back} className={styles.backArrow}>
+              <IoArrowBackOutline size={25} color='rgba(255,166,0,1)'/>
+            </button>
+            <p>Gen 1: {balance1} Gen 2: {balance2}</p>
+
+          </div>
           <h1 style={{  wordWrap: "break-word", color: "#64b4ff"}}>Proposals</h1>
+          {
+            balance1 == 0 && balance2 == 0 &&
+              <h3>You are ineligible to vote. You must hold either a&nbsp;
+                <a href={"https://opensea.io/collection/botsofcog"} target="_blank" style={{color: "rgba(255,255,0,1)"}}>Gen1</a>
+                &nbsp;or&nbsp;
+                <a href={"../mint"} target="_blank" style={{color: "rgba(255,255,0,1)"}}>Gen2</a>
+                &nbsp;NFT.
+              </h3>
+          }
           <div style={{display: 'flex', flexDirection: 'column', width: '100%', gap: '20px', marginTop: "50px"}}>
             {proposalsQuery?.data?.proposals?.map((proposal: Proposal, proposalIndex: number) => {
               let winner = -1
@@ -288,6 +337,7 @@ export default function Home() {
             })}
           </div>
         </>
+        
       }
     </div>
   );
