@@ -95,8 +95,8 @@ export default function Home() {
 
   // useEffect(() => {
   //   console.log(votes)
-
   // }, [votes])
+
   // console.log(address)
   // console.log(isOpen)
   // console.log(votingPower)
@@ -148,14 +148,14 @@ export default function Home() {
   }
 
   return (
-    <div style={{width: '100%', padding: '4% 8%', textAlign: 'left', color: 'white', position: 'relative'}}>
+    <div style={{width: '100%', padding: '4% 8%', textAlign: 'left', color: 'rgba(255,166,0,1)', position: 'relative'}}>
       <Modal isOpen={isOpen} setIsOpen={setIsOpen}>
         {modalIndex == 0 &&
           <>
             <h3 style={{margin: "15px 0px 30px 0px"}}>Your Vote is In!</h3>
             <button
               onClick={() => {setIsOpen(false)}}
-              style={{width: '100%', backgroundColor: "rgba(255,255,255,0)", color: 'white', border: '1px solid rgba(255,255,255,0.5)', padding: "10px", borderRadius: "20px"}}  
+              style={{width: '100%', backgroundColor: "rgba(255,255,255,0)", color: 'rgba(255,166,0,1)', border: '1px solid rgba(255,166,0,0.5)', padding: "10px", borderRadius: "20px"}}  
             >
               Close
             </button>
@@ -166,7 +166,7 @@ export default function Home() {
             <h3 style={{margin: "15px 0px 30px 0px"}}>Failed to vote</h3>
             <button
               onClick={() => {setIsOpen(false)}}
-              style={{width: '100%', backgroundColor: "rgba(255,255,255,0)", color: 'white', border: '1px solid rgba(255,255,255,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: "10px", borderRadius: "20px"}}  
+              style={{width: '100%', backgroundColor: "rgba(255,255,255,0)", color: 'rgba(255,166,0,1)', border: '1px solid rgba(255,166,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: "10px", borderRadius: "20px"}}  
             >
               Close
             </button>
@@ -179,11 +179,26 @@ export default function Home() {
       {!address ? <ConnectWallet/>:
         <>
           <button onClick={router.back} className={styles.backArrow}>
-            <IoArrowBackOutline size={25} color="white"/>
+            <IoArrowBackOutline size={25} color='rgba(255,166,0,1)'/>
           </button>
-          <h1 style={{  wordWrap: "break-word"}}>Proposals</h1>
+          <h1 style={{  wordWrap: "break-word", color: "#64b4ff"}}>Proposals</h1>
           <div style={{display: 'flex', flexDirection: 'column', width: '100%', gap: '20px', marginTop: "50px"}}>
             {proposalsQuery?.data?.proposals?.map((proposal: Proposal, proposalIndex: number) => {
+              let winner = -1
+              for (let i = 0; i < proposal.scores.length - 1; i++) {
+                let max = true
+
+                for (let j = i + 1; j < proposal.scores.length; j++) {
+                  if (proposal.scores[i] <= proposal.scores[j]) {
+                    max = false
+                  }
+                }
+
+                if (max == true) {
+                  winner = i
+                }
+              }
+              // console.log("WINNER OF PROPOSAL " + proposalIndex + " is " + winner)
               return (
                 <div key={proposalIndex} className={styles.proposalContainer}>
                   
@@ -210,7 +225,7 @@ export default function Home() {
                           {/* Proposal Title */}
                           <h3 style={{margin: "0px"}}>{proposal.title}</h3>
                           {/* Author */}
-                          <p style={{margin: "5px 0px 15px 0px", color: '#BBB', fontSize: '14px'}}> 
+                          <p style={{margin: "5px 0px 15px 0px", color: 'rgba(255,166,0,0.7)', fontSize: '14px'}}> 
                             Created by {proposal.author.substring(0, 5) + '...' + address.substring(address.length - 5, address.length - 1)}
                           </p>
                         </div>
@@ -234,9 +249,9 @@ export default function Home() {
                             key={choiceIndex} 
                             onClick={() => {handleVote(proposalIndex, choiceIndex)}}
                             className={styles.proposalButton}
-                            style={{...(votes[proposalIndex] == choiceIndex + 1 ? {backgroundColor: "rgba(255,255,255,0.2)"}:{}), ...{pointerEvents: proposal.state == "active"?"auto":"none"}}}
+                            style={{...((votes[proposalIndex] == choiceIndex + 1) || (choiceIndex == winner && proposal.state == "closed")? {backgroundColor: "rgba(255,255,255,0.2)"}:{}), ...{pointerEvents: proposal.state == "active"?"auto":"none"}}}
                           >
-                            {choiceIndex + 1 == votes[proposalIndex] && <IoCheckmarkOutline size={18}/>}
+                            {(votes[proposalIndex] == choiceIndex + 1) || (choiceIndex == winner && proposal.state == "closed") && <IoCheckmarkOutline size={18}/>}
                             <p style={{margin: 0, marginRight: 'auto'}}>
                               {choice}
                             </p>
@@ -251,7 +266,7 @@ export default function Home() {
                   
                   {/* Right Column */}
                   <div style={{whiteSpace: 'nowrap', backgroundColor: 'rgba(255,255,255,0.05)', padding: '30px 3%', borderRadius: "20px", display: 'flex', justifyContent: 'space-between', gap: "20px", fontSize: "14px", width: '100%', maxWidth: "330px"}}>
-                    <div style={{color: '#BBB', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '20px', flexWrap: 'wrap'}}>
+                    <div style={{color: 'rgba(255,166,0,0.7)', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '20px', flexWrap: 'wrap'}}>
                       <p>Start Date </p>
                       <p>End Date </p>
                       <p>Snapshot </p>
@@ -260,7 +275,7 @@ export default function Home() {
                       <p>{moment(proposal.start * 1000).format("lll")}</p>
                       <p>{moment(proposal.end * 1000).format("lll")}</p>
                       <a 
-                        style={{display: 'flex', alignItems: 'center', gap: "10px", color: 'white', textDecoration: 'none'}} 
+                        style={{display: 'flex', alignItems: 'center', gap: "10px", color: 'rgba(255,166,0,1)', textDecoration: 'none'}} 
                         href={`https://etherscan.io/block/`+ proposal.snapshot} target="_blank" rel="noreferrer"
                       >
                         <p style={{margin: 0}}>{proposal.snapshot}</p>
