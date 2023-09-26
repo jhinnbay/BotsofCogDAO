@@ -386,6 +386,21 @@
   background-color: rgba(255,255,255,0.2);
 }
 
+.backArrow {
+  background-color: rgba(255,255,255,0.1);
+  padding: 15px;
+  border-radius: 100px;
+  height: fit-content;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.5s
+}
+
+.backArrow:hover {
+  background-color: rgba(255,255,255,0.3);
+}
+
 @keyframes load {
   from {
     transform: rotate(0turn);

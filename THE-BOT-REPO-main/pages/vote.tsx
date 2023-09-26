@@ -93,7 +93,10 @@ export default function Home() {
 
   const [isOpen, setIsOpen] = useState<boolean>(false)
 
-  // console.log(votes)
+  // useEffect(() => {
+  //   console.log(votes)
+
+  // }, [votes])
   // console.log(address)
   // console.log(isOpen)
   // console.log(votingPower)
@@ -144,22 +147,15 @@ export default function Home() {
       
   }
 
-  useEffect(() => {
-    if (voteSuccess) {
-      proposalsQuery.refetch()
-      setVoteSuccess(false)
-    }
-  }, [voteSuccess])
-
   return (
     <div style={{width: '100%', padding: '4% 8%', textAlign: 'left', color: 'white', position: 'relative'}}>
       <Modal isOpen={isOpen} setIsOpen={setIsOpen}>
         {modalIndex == 0 &&
           <>
-            <h3>Your Vote is In!</h3>
+            <h3 style={{margin: "15px 0px 30px 0px"}}>Your Vote is In!</h3>
             <button
               onClick={() => {setIsOpen(false)}}
-              style={{width: '100%', backgroundColor: "rgba(255,255,255,0)", color: 'white', border: '1px solid rgba(255,255,255,0.5)'}}  
+              style={{width: '100%', backgroundColor: "rgba(255,255,255,0)", color: 'white', border: '1px solid rgba(255,255,255,0.5)', padding: "10px", borderRadius: "20px"}}  
             >
               Close
             </button>
@@ -167,10 +163,10 @@ export default function Home() {
         }
         {modalIndex == 1 &&
           <>
-            <h3 style={{marginTop: 5}}>Failed to vote</h3>
+            <h3 style={{margin: "15px 0px 30px 0px"}}>Failed to vote</h3>
             <button
               onClick={() => {setIsOpen(false)}}
-              style={{width: '100%', backgroundColor: "rgba(255,255,255,0)", color: 'white', border: '1px solid rgba(255,255,255,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: "10px"}}  
+              style={{width: '100%', backgroundColor: "rgba(255,255,255,0)", color: 'white', border: '1px solid rgba(255,255,255,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: "10px", borderRadius: "20px"}}  
             >
               Close
             </button>
@@ -182,7 +178,7 @@ export default function Home() {
       </Modal>
       {!address ? <ConnectWallet/>:
         <>
-          <button onClick={router.back} style={{backgroundColor: 'rgba(255,255,255,0.1)', padding: "10px", borderRadius: "100px", height: 'fit-content', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+          <button onClick={router.back} className={styles.backArrow}>
             <IoArrowBackOutline size={25} color="white"/>
           </button>
           <h1 style={{  wordWrap: "break-word"}}>Proposals</h1>
@@ -192,7 +188,18 @@ export default function Home() {
                 <div key={proposalIndex} className={styles.proposalContainer}>
                   
                   {/* dont ask me why this components isnt returning any jsx if it works it works :) */}
-                  <GetProposalInfo voteSuccess={voteSuccess} setVotes={setVotes} votingPower={votingPower} setVotingPower={setVotingPower} address={address} proposalID={proposalsQuery?.data?.proposals[proposalIndex].id} index={proposalIndex}/>
+                  <GetProposalInfo
+                    proposalsQuery={proposalsQuery} 
+                    setVoteSuccess={setVoteSuccess}
+                    voteSuccess={voteSuccess}
+                    votes={votes}
+                    setVotes={setVotes}
+                    votingPower={votingPower}
+                    setVotingPower={setVotingPower}
+                    address={address}
+                    proposalID={proposalsQuery?.data?.proposals[proposalIndex].id}
+                    index={proposalIndex}
+                  />
                   
                   {/* Left Column */}
                   <div key={proposalIndex} style={{flexWrap: 'wrap', gap: "30px", display: 'flex', flexDirection: 'column', justifyContent: 'space-between', flexGrow: 1}}>
@@ -226,15 +233,8 @@ export default function Home() {
                           <button 
                             key={choiceIndex} 
                             onClick={() => {handleVote(proposalIndex, choiceIndex)}}
-                            // onMouseEnter={() => {
-
-                            // }}
-                            // onMouseLeave={() => {
-
-                            // }}
-                            // style={{backgroundColor: (proposalSelected == proposalIndex && choiceSelected == choiceIndex)?"rgba(255,255,255,0.2)":"rgba(255,255,255,0)"}}
                             className={styles.proposalButton}
-                            style={votes[proposalIndex] == choiceIndex + 1 ? {backgroundColor: "rgba(255,255,255,0.2)"}:{}}
+                            style={{...(votes[proposalIndex] == choiceIndex + 1 ? {backgroundColor: "rgba(255,255,255,0.2)"}:{}), ...{pointerEvents: proposal.state == "active"?"auto":"none"}}}
                           >
                             {choiceIndex + 1 == votes[proposalIndex] && <IoCheckmarkOutline size={18}/>}
                             <p style={{margin: 0, marginRight: 'auto'}}>

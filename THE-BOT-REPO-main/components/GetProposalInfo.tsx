@@ -41,7 +41,7 @@ const GET_VOTES = gql`
     }
   }
 `
-const GetProposalInfo = ({voteSuccess, setVotes, votingPower, setVotingPower, address, proposalID, index}: any) => {
+const GetProposalInfo = ({proposalsQuery, setVoteSuccess, voteSuccess, votes, setVotes, votingPower, setVotingPower, address, proposalID, index}: any) => {
 
   const votingPowerQuery = useQuery(GET_VOTING_POWER, {variables: {voter: address, proposal: proposalID}})
   const voteQuery = useQuery(GET_VOTES, {variables: {proposal: proposalID}})
@@ -50,6 +50,8 @@ const GetProposalInfo = ({voteSuccess, setVotes, votingPower, setVotingPower, ad
   useEffect(() => {
     if (voteSuccess) {
       voteQuery.refetch({proposal: proposalID})
+      proposalsQuery.refetch()
+      setVoteSuccess(false)
     }
   }, [voteSuccess])
 
@@ -65,9 +67,8 @@ const GetProposalInfo = ({voteSuccess, setVotes, votingPower, setVotingPower, ad
 
   //once voteQuery gets data, put it into state
   useEffect(() => {
-    // console.log(voteQuery)
     if (voteQuery?.data?.votes) {
-      let tempVotes: number[] = []
+      let tempVotes: number[] = [...votes]
       voteQuery.data.votes.map((vote:any, voteIndex:number) => {
         if (vote.voter == address) {
           tempVotes[index] = vote.choice
