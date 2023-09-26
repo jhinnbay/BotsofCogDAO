@@ -24,6 +24,7 @@ button {
   cursor: pointer;
   border: none;
   margin: 0px;
+  border-radius: 0;
 }
 #__next {
   width: 100%;

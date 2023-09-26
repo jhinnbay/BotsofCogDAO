@@ -24,6 +24,7 @@ interface Proposal {
   scores_total: number,
   scores_updated: number,
   author: string,
+  type: string,
   space: {
     id: string,
     name: string,
@@ -72,11 +73,7 @@ const GET_PROPOSALS = gql`
         id
         name
       }
-      strategies {
-        name
-        network
-        params
-      }
+      type
     }
   }
 `
@@ -100,7 +97,16 @@ export default function Home() {
   const [votingPower, setVotingPower] = useState<number[]>([])
   const [voteSuccess, setVoteSuccess] = useState<boolean>(false)
   const [modalIndex, setModalIndex] = useState<number>(0)
-  // console.log(proposalsQuery?.data?.proposal)
+  const [quadraticSelection, setQuadraticSelection] = useState<number[][]>([])
+
+  useEffect(() => {
+    proposalsQuery?.data?.proposals.map((proposal: Proposal, proposalIndex: number) => {
+      if (proposal.type == "quadratic") {
+        quadraticSelection[proposalIndex] = new Array(proposal.choices.length).fill(0)
+      }
+    })
+  }, [proposalsQuery])
+
 
   const NFTBalance1 = useNFTBalance(
     contract1.contract,
@@ -120,7 +126,8 @@ export default function Home() {
   // console.log(address)
   // console.log(isOpen)
   // console.log(votingPower)
-  console.log("PROPOSAL QUERY", proposalsQuery.data)
+  // console.log(votes)
+  // console.log("PROPOSAL QUERY", proposalsQuery.data)
   
 
   //formats numbers 
@@ -141,14 +148,27 @@ export default function Home() {
     return item ? (num / item.value).toFixed(digits).replace(rx, "$1") + item.symbol : "0";
   }
 
-  const handleVote = async (proposalIndex: number, choiceIndex: number) => {
+  const handleVote = async (proposalIndex: number, choiceIndex?: number) => {
     const proposalID = proposalsQuery?.data.proposals[proposalIndex].id
+    const proposalType = proposalsQuery?.data.proposals[proposalIndex].type
+    let choice: any
+    
     setIsOpen(true)
-
     if (balance1 == 0 && balance2 == 0) {
       setModalIndex(3)
       return
     }
+
+    if (proposalType == "single-choice" && choiceIndex) choice = choiceIndex + 1
+    else if (proposalType == "quadratic") {
+      choice = {}
+      quadraticSelection[proposalIndex].map((selection, index) => {
+        choice[(index + 1).toString()] = selection
+      })
+      console.log(choice)
+    }
+    else return
+
     setModalIndex(2)
 
     try {
@@ -156,8 +176,8 @@ export default function Home() {
         await client.vote(web3, address?address:"", {
           space: 'jonomnom.eth',
           proposal: proposalID,
-          type: 'single-choice',
-          choice: choiceIndex + 1,
+          type: proposalType,
+          choice: choice,
           reason: '',
           app: 'snapshot'
         })
@@ -247,7 +267,7 @@ export default function Home() {
                   winner = i
                 }
               }
-              // console.log("WINNER OF PROPOSAL " + proposalIndex + " is " + winner)
+
               return (
                 <div key={proposalIndex} className={styles.proposalContainer}>
                   
@@ -292,7 +312,7 @@ export default function Home() {
 
                     {/* Choices */}
                     <div style={{display: 'flex', flexDirection: 'column', flexGrow: 1, gap: "15px"}}>
-                      {proposal.choices.map((choice, choiceIndex) => {
+                      {proposal.type == "single-choice" && proposal.choices.map((choice, choiceIndex) => {
                         return (
                           <button 
                             key={choiceIndex} 
@@ -310,6 +330,67 @@ export default function Home() {
                           </button>
                         )
                       })}
+                      {proposal.type == "quadratic" && 
+                        <>
+                          {
+                            proposal.choices.map((choice, choiceIndex) => {
+                              return (
+                                <div 
+                                  key={choiceIndex} 
+                                  // onClick={() => {handleVote(proposalIndex, choiceIndex)}}
+                                  className={styles.proposalButton}
+                                  style={{backgroundColor: "rgba(255,255,255,0)"}}
+                                >
+                                  {(votes[proposalIndex] == choiceIndex + 1) || (choiceIndex == winner && proposal.state == "closed") && <IoCheckmarkOutline size={18}/>}
+                                  <p style={{margin: 0, marginRight: 'auto'}}>
+                                    {choice}
+                                  </p>
+                                  <button 
+                                    style={{color: 'rgba(255,166,0,1)'}}
+                                    onClick={() => {
+                                      let tempQuadraticSelection: number[][] = []
+                                      quadraticSelection.map((selection, index) => {
+                                        tempQuadraticSelection[index] = selection
+                                      })
+                                      if (tempQuadraticSelection[proposalIndex][choiceIndex] > 0) {
+                                        tempQuadraticSelection[proposalIndex][choiceIndex] = tempQuadraticSelection[proposalIndex][choiceIndex] - 1
+                                      }
+  
+                                      setQuadraticSelection(tempQuadraticSelection)
+                                    }}
+                                  >
+                                    -
+                                  </button>
+                                  <p>{quadraticSelection[proposalIndex][choiceIndex]}</p>
+                                  <button
+                                    style={{color: 'rgba(255,166,0,0.7)'}}
+                                    onClick={() => {
+                                      let tempQuadraticSelection: number[][] = []
+                                      quadraticSelection.map((selection, index) => {
+                                        tempQuadraticSelection[index] = selection
+                                      })
+                                      tempQuadraticSelection[proposalIndex][choiceIndex] = tempQuadraticSelection[proposalIndex][choiceIndex] + 1
+  
+                                      setQuadraticSelection(tempQuadraticSelection)
+                                    }}
+                                  >
+                                    +
+                                  </button>
+                                  <div>
+                                    {Math.round(proposal.scores[choiceIndex] * 100) / 100} votes
+                                  </div>
+                                </div>
+                              )
+                            })
+                          }
+                          <button 
+                            className={styles.proposalButton}
+                            onClick={() => handleVote(proposalIndex)}
+                          >
+                            Vote
+                          </button>
+                        </>
+                      }
                     </div>
                   </div>
                   
