@@ -98,6 +98,112 @@ export default function Home() {
   const [voteSuccess, setVoteSuccess] = useState<boolean>(false)
   const [modalIndex, setModalIndex] = useState<number>(0)
   const [quadraticSelection, setQuadraticSelection] = useState<number[][]>([])
+... (327 lines left)
+Collapse
+message.txt
+18 KB
+./pages/vote.ts
+﻿
+import { useState, useEffect } from "react";
+import { useRouter } from "next/router";
+import styles from "../styles/Home.module.css";
+import { useContract, useContractRead, useContractWrite, useAddress, ConnectWallet, useSDK, ThirdwebProvider, useNFTBalance } from "@thirdweb-dev/react";
+import { useQuery, gql, useLazyQuery } from '@apollo/client';
+import GetProposalInfo from "../components/GetProposalInfo";
+import snapshot from '@snapshot-labs/snapshot.js'
+import moment from "moment";
+import Modal from "../components/Modal";
+import { IoExitOutline, IoCheckmarkOutline, IoCheckmarkCircleOutline, IoArrowBackOutline } from "react-icons/io5"
+import Loading from "../components/Loading";
+
+interface Proposal {
+  id: number,
+  title: string,
+  body: string,
+  choices: string[],
+  start: number,
+  end: number,
+  snapshot: string,
+  state: string,
+  scores: number[],
+  scores_by_strategy: number[][],
+  scores_total: number,
+  scores_updated: number,
+  author: string,
+  type: string,
+  space: {
+    id: string,
+    name: string,
+  }
+}
+
+const CONTRACT_ADDRESS = "0xC432013CbA34F5202c3cAf109d3456d3b97e11bB";
+
+const GET_SPACES = gql`
+  query {
+    space(id: "jonomnom.eth") {
+      id
+      name
+      about
+      network
+      symbol
+      members
+    }
+  }
+`
+const GET_PROPOSALS = gql`
+  query Proposals {
+    proposals (
+      first: 3,
+      skip: 0,
+      where: {
+        space_in: ["jonomnom.eth"],
+      },
+      orderBy: "created",
+      orderDirection: desc
+    ) {
+      id
+      title
+      body
+      choices
+      start
+      end
+      snapshot
+      state
+      scores
+      scores_by_strategy
+      scores_total
+      scores_updated
+      author
+      space {
+        id
+        name
+      }
+      type
+    }
+  }
+`
+
+
+export default function Home() {
+  const hub = 'https://hub.snapshot.org'; // or https://testnet.snapshot.org for testnet
+  const contractAddress1 = "0x1bbca92fc889af891e3b666aee7cb3534b83d7b7"
+  const contractAddress2 = "0x8B9Ada84CBFBE266d103E6c90717Df789B63d0F7"
+  const client = new snapshot.Client712(hub);
+  const router = useRouter();
+  const address = useAddress()
+  const sdk = useSDK()
+  const web3 = sdk?.getSigner()?.provider
+
+  const contract1 = useContract(contractAddress1)
+  const contract2 = useContract(contractAddress2)
+
+  const proposalsQuery = useQuery(GET_PROPOSALS)
+  const [votes, setVotes] = useState<number[]>([])
+  const [votingPower, setVotingPower] = useState<number[]>([])
+  const [voteSuccess, setVoteSuccess] = useState<boolean>(false)
+  const [modalIndex, setModalIndex] = useState<number>(0)
+  const [quadraticSelection, setQuadraticSelection] = useState<number[][]>([])
 
   useEffect(() => {
     proposalsQuery?.data?.proposals.map((proposal: Proposal, proposalIndex: number) => {
@@ -173,6 +279,7 @@ export default function Home() {
 
     try {
       if (web3) {
+        // @ts-ignore
         await client.vote(web3, address?address:"", {
           space: 'jonomnom.eth',
           proposal: proposalID,
