@@ -165,10 +165,10 @@ export default function Home() {
     let choice: any;
 
     setIsOpen(true);
-    if (balance1 == 0 && balance2 == 0) {
-      setModalIndex(3);
-      return;
-    }
+    // if (balance1 == 0 && balance2 == 0) {
+    //   setModalIndex(3);
+    //   return;
+    // }
 
     if (proposalType == "single-choice" && choiceIndex)
       choice = choiceIndex + 1;
