@@ -184,8 +184,8 @@ export default function Home() {
     try {
       if (web3) {
         // @ts-ignore
-        await client.vote(web3, address ? address : "", {
-          space: "jonomnom.eth",
+        await client.vote(web3, address?address:"", {
+          space: 'jonomnom.eth',
           proposal: proposalID,
           type: proposalType,
           choice: choice,
