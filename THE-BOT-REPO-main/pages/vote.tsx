@@ -23,6 +23,7 @@ import {
   IoArrowBackOutline,
 } from "react-icons/io5";
 import Loading from "../components/Loading";
+import { SNAPSHOT_SPACE } from "../consts/snapshot";
 
 interface Proposal {
   id: number;
@@ -185,7 +186,7 @@ export default function Home() {
       if (web3) {
         // @ts-ignore
         await client.vote(web3, address?address:"", {
-          space: 'jonomnom.eth',
+          space: SNAPSHOT_SPACE,
           proposal: proposalID,
           type: proposalType,
           choice: choice,
