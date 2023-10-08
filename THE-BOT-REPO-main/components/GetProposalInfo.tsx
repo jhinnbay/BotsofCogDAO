@@ -1,10 +1,10 @@
 import { useQuery, gql } from "@apollo/client"
 import { useEffect } from 'react'
-
+import { SNAPSHOT_SPACE } from '../consts/snapshot'
 const GET_VOTING_POWER = gql`
   query VP($voter: String!, $proposal: String!){
     vp (
-      space: "jonomnom.eth"
+      space: "${SNAPSHOT_SPACE}"
       voter: $voter
       proposal: $proposal
       ) {

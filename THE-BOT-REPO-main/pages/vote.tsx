@@ -50,7 +50,7 @@ const CONTRACT_ADDRESS = "0xC432013CbA34F5202c3cAf109d3456d3b97e11bB";
 
 const GET_SPACES = gql`
   query {
-    space(id: "jonomnom.eth") {
+    space(id: "${SNAPSHOT_SPACE}") {
       id
       name
       about
@@ -65,7 +65,7 @@ const GET_PROPOSALS = gql`
     proposals(
       first: 3
       skip: 0
-      where: { space_in: ["jonomnom.eth"] }
+      where: { space_in: ["${SNAPSHOT_SPACE}"] }
       orderBy: "created"
       orderDirection: desc
     ) {
