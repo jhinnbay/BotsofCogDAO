@@ -24,6 +24,8 @@ import {
 } from "react-icons/io5";
 import Loading from "../components/Loading";
 import { SNAPSHOT_SPACE } from "../consts/snapshot";
+import ReactMarkdown from 'react-markdown'
+import Image from "next/image";
 
 interface Proposal {
   id: number;
@@ -105,11 +107,28 @@ export default function Home() {
   const contract2 = useContract(contractAddress2);
 
   const proposalsQuery = useQuery(GET_PROPOSALS);
+
+  const markdownComponents = {
+    //This custom renderer changes how images are rendered
+    //we use it to constrain the max width of an image to its container
+    img: (image:any) => {
+      return (
+        <img
+          src={image.src}
+          alt={image.alt}
+          style={{width: "500px"}}
+        />
+      )
+    }
+  };
+
   const [votes, setVotes] = useState<number[]>([]);
   const [votingPower, setVotingPower] = useState<number[]>([]);
   const [voteSuccess, setVoteSuccess] = useState<boolean>(false);
   const [modalIndex, setModalIndex] = useState<number>(0);
   const [quadraticSelection, setQuadraticSelection] = useState<number[][]>([]);
+  // nessecary for parsing markdown images
+  const [proposalBodies, setProposalBodies] = useState<string[]>([])
 
   useEffect(() => {
     proposalsQuery?.data?.proposals.map(
@@ -122,6 +141,31 @@ export default function Home() {
       }
     );
   }, [proposalsQuery]);
+
+  // whenever proposalsQuery is updated, update proposalBodies for up to date info
+  useEffect(() => {
+    let tempProposalBodies: string[] = []
+    proposalsQuery?.data?.proposals?.map((proposal: Proposal, proposalIndex: number) => {
+      //formats body so that ifps images work
+      let hasLeftBracket = false
+      let msg = proposal.body
+      for (let i = 0; i < msg.length; i++) {
+        if (msg[i] == '[') hasLeftBracket = true
+        else if (
+          msg[i] == ']' &&
+          hasLeftBracket &&
+          msg[i+1] + msg[i+2] + msg[i+3] + msg[i+4] + msg[i+5] + msg[i+6] + msg[i+7] + proposal.body[i+8] == "(ipfs://") {
+          msg = msg.slice(0, i + 2) + "https://snapshot.4everland.link/ipfs/" + msg.slice(i + 9, msg.length - 1)
+          hasLeftBracket = false
+        }
+        else if (msg[i] == ']') hasLeftBracket = false
+      }
+      tempProposalBodies.push(msg)
+    })
+
+    setProposalBodies(tempProposalBodies)
+
+  }, [proposalsQuery])
 
   const NFTBalance1 = useNFTBalance(contract1.contract, address, 0);
   const NFTBalance2 = useNFTBalance(contract2.contract, address, 0);
@@ -158,18 +202,25 @@ export default function Home() {
       ? (num / item.value).toFixed(digits).replace(rx, "$1") + item.symbol
       : "0";
   };
-
+  
   const handleVote = async (proposalIndex: number, choiceIndex?: number) => {
     const proposalID = proposalsQuery?.data.proposals[proposalIndex].id;
     const proposalType = proposalsQuery?.data.proposals[proposalIndex].type;
     let choice: any;
-    console.log("HI")
+
     setIsOpen(true);
     // if (balance1 == 0 && balance2 == 0) {
     //   setModalIndex(3);
     //   return;
     // }
-
+    if (!address) {
+      setModalIndex(1)
+      return
+    }
+    if (proposalsQuery?.data.proposals[proposalIndex].state == "closed") {
+      setModalIndex(1)
+      return
+    }
     if (proposalType == "single-choice" && typeof(choiceIndex) == "number")
       choice = choiceIndex + 1;
     else if (proposalType == "quadratic") {
@@ -177,12 +228,13 @@ export default function Home() {
       quadraticSelection[proposalIndex].map((selection, index) => {
         choice[(index + 1).toString()] = selection;
       });
-    } 
+    }
     // else return;
 
     setModalIndex(2);
 
     try {
+      // console.log("TRIESSSSSSS")
       if (web3) {
         // @ts-ignore
         await client.vote(web3, address?address:"", {
@@ -295,33 +347,31 @@ export default function Home() {
           </p>
         </div>
         <h1 style={{ wordWrap: "break-word", color: "#64b4ff" }}>Proposals</h1>
-        {!address ? (
+
           <ConnectWallet />
-        ) : (
-          <>
-            {balance1 == 0 && balance2 == 0 && (
-              <h3>
-                You are ineligible to vote. You must hold either a&nbsp;
-                <a
-                  href={"https://opensea.io/collection/botsofcog"}
-                  target="_blank"
-                  style={{ color: "rgba(255,255,0,1)" }}
-                >
-                  Gen1
-                </a>
-                &nbsp;or&nbsp;
-                <a
-                  href={"../mint"}
-                  target="_blank"
-                  style={{ color: "rgba(255,255,0,1)" }}
-                >
-                  Gen2
-                </a>
-                &nbsp;NFT.
-              </h3>
-            )}
-          </>
-        )}
+          {balance1 == 0 && balance2 == 0 && (
+            <h3>
+              You are ineligible to vote. You must hold either a&nbsp;
+              <a
+                href={"https://opensea.io/collection/botsofcog"}
+                target="_blank"
+                style={{ color: "rgba(255,255,0,1)" }}
+              >
+                Gen1
+              </a>
+              &nbsp;or&nbsp;
+              <a
+                href={"../mint"}
+                target="_blank"
+                style={{ color: "rgba(255,255,0,1)" }}
+              >
+                Gen2
+              </a>
+              &nbsp;NFT.
+            </h3>
+          )}
+
+
 
         <div
           style={{
@@ -334,6 +384,7 @@ export default function Home() {
         >
           {proposalsQuery?.data?.proposals?.map(
             (proposal: Proposal, proposalIndex: number) => {
+
               let winner = -1;
               for (let i = 0; i < proposal.scores.length - 1; i++) {
                 let max = true;
@@ -341,7 +392,6 @@ export default function Home() {
                 for (let j = i + 1; j < proposal.scores.length; j++) {
                   if (proposal.scores[i] <= proposal.scores[j]) {
                     max = false;
-                    // if (proposalIndex == 1) console.log("")
                   }
                 }
 
@@ -381,7 +431,8 @@ export default function Home() {
                       flexGrow: 1,
                     }}
                   >
-                    <div style={{ lineHeight: "30px" }}>
+                    {/* Description Wrapper */}
+                    <div style={{ lineHeight: "30px"}}>
                       <div
                         style={{
                           display: "flex",
@@ -434,7 +485,9 @@ export default function Home() {
                         </div>
                       </div>
 
-                      <p>{proposal.body} </p>
+                      <div>
+                        <ReactMarkdown children={proposalBodies[proposalIndex]} components={markdownComponents}/>
+                      </div>
                     </div>
 
                     {/* Choices */}
@@ -467,6 +520,9 @@ export default function Home() {
                                       ? "auto"
                                       : "none",
                                 },
+                                ...{
+                                  flexGrow: 0
+                                },
                               }}
                             >
                               {votes[proposalIndex] == choiceIndex + 1 ||
@@ -474,13 +530,13 @@ export default function Home() {
                                   proposal.state == "closed" && (
                                     <IoCheckmarkOutline size={18} />
                                   ))}
-                              <p style={{ margin: 0, marginRight: "auto" }}>
+                              <p style={{ margin: 0 }}>
                                 {choice}
                               </p>
-                              <div>
+                              {/* <div>
                                 {nFormatter(proposal.scores[choiceIndex], 1)}{" "}
                                 cogz
-                              </div>
+                              </div> */}
                             </button>
                           );
                         })
@@ -494,10 +550,20 @@ export default function Home() {
                                 // onClick={() => {handleVote(proposalIndex, choiceIndex)}}
                                 className={styles.proposalButton}
                                 style={{
-                                  ...((choiceIndex == winner &&
+                                  ...(votes[proposalIndex] == choiceIndex + 1 ||
+                                  (choiceIndex == winner &&
                                     proposal.state == "closed")
                                     ? { backgroundColor: "rgba(255,255,255,0.2)" }
                                     : {}),
+                                  ...{
+                                    pointerEvents:
+                                      proposal.state == "active"
+                                        ? "auto"
+                                        : "none",
+                                  },
+                                  ...{
+                                    flexGrow: 0,
+                                  }
                                 }}
                               >
                                 {votes[proposalIndex] == choiceIndex + 1 ||
@@ -507,143 +573,235 @@ export default function Home() {
                                     )
                                   )
                                 }
-                                <p style={{ margin: 0, marginRight: "auto" }}>
+                                <p style={{ margin: 0 }}>
                                   {choice}
                                 </p>
-                                <button
-                                  style={{ color: "rgba(255,166,0,1)" }}
-                                  onClick={() => {
-                                    let tempQuadraticSelection: number[][] = [];
-                                    quadraticSelection.map(
-                                      (selection, index) => {
-                                        tempQuadraticSelection[index] =
-                                          selection;
-                                      }
-                                    );
-                                    if (
-                                      tempQuadraticSelection[proposalIndex][
-                                        choiceIndex
-                                      ] > 0
-                                    ) {
-                                      tempQuadraticSelection[proposalIndex][
-                                        choiceIndex
-                                      ] =
-                                        tempQuadraticSelection[proposalIndex][
-                                          choiceIndex
-                                        ] - 1;
-                                    }
+                                {
+                                  // proposal.state != "closed" && (
+                                    <>
+                                      {/* - button */}
+                                      <button
+                                        style={{ color: "rgba(255,166,0,1)" }}
+                                        onClick={() => {
+                                          let tempQuadraticSelection: number[][] = [];
+                                          quadraticSelection.map(
+                                            (selection, index) => {
+                                              tempQuadraticSelection[index] =
+                                                selection;
+                                            }
+                                          );
+                                          if (
+                                            tempQuadraticSelection[proposalIndex][
+                                              choiceIndex
+                                            ] > 0
+                                          ) {
+                                            tempQuadraticSelection[proposalIndex][
+                                              choiceIndex
+                                            ] =
+                                              tempQuadraticSelection[proposalIndex][
+                                                choiceIndex
+                                              ] - 1;
+                                          }
 
-                                    setQuadraticSelection(
-                                      tempQuadraticSelection
-                                    );
-                                  }}
-                                >
-                                  -
-                                </button>
-                                <p>
-                                  {quadraticSelection[proposalIndex] &&
-                                    quadraticSelection[proposalIndex][
-                                      choiceIndex
-                                    ]}
-                                </p>
-                                <button
-                                  style={{ color: "rgba(255,166,0,0.7)" }}
-                                  onClick={() => {
-                                    let tempQuadraticSelection: number[][] = [];
-                                    quadraticSelection.map(
-                                      (selection, index) => {
-                                        tempQuadraticSelection[index] =
-                                          selection;
-                                      }
-                                    );
-                                    tempQuadraticSelection[proposalIndex][
-                                      choiceIndex
-                                    ] =
-                                      tempQuadraticSelection[proposalIndex][
-                                        choiceIndex
-                                      ] + 1;
+                                          setQuadraticSelection(
+                                            tempQuadraticSelection
+                                          );
+                                        }}
+                                      >
+                                        -
+                                      </button>
+                                      <p>
+                                        {quadraticSelection[proposalIndex] &&
+                                          quadraticSelection[proposalIndex][
+                                            choiceIndex
+                                          ]}
+                                      </p>
+                                      {/* + button */}
+                                      <button
+                                        style={{ color: "rgba(255,166,0,0.7)" }}
+                                        onClick={() => {
+                                          let tempQuadraticSelection: number[][] = [];
+                                          quadraticSelection.map(
+                                            (selection, index) => {
+                                              tempQuadraticSelection[index] =
+                                                selection;
+                                            }
+                                          );
+                                          tempQuadraticSelection[proposalIndex][
+                                            choiceIndex
+                                          ] =
+                                            tempQuadraticSelection[proposalIndex][
+                                              choiceIndex
+                                            ] + 1;
 
-                                    setQuadraticSelection(
-                                      tempQuadraticSelection
-                                    );
-                                  }}
-                                >
-                                  +
-                                </button>
-                                <div>
+                                          setQuadraticSelection(
+                                            tempQuadraticSelection
+                                          );
+                                        }}
+                                      >
+                                        +
+                                      </button>
+
+                                    </>
+                                  // )
+                                }
+                                {/* <div>
                                   {Math.round(
                                     proposal.scores[choiceIndex] * 100
                                   ) / 100}{" "}
                                   cogz
-                                </div>
+                                </div> */}
                               </div>
                             );
                           })}
-                          <button
-                            className={styles.proposalButton}
-                            onClick={() => handleVote(proposalIndex)}
-                          >
-                            Vote
-                          </button>
+                          {proposal.state == "active" &&
+                            <button
+                              className={styles.proposalButton}
+                              onClick={() => handleVote(proposalIndex)}
+                            >
+                              Vote
+                            </button>
+                          }
                         </>
                       )}
                     </div>
                   </div>
 
                   {/* Right Column */}
-                  <div
-                    style={{
-                      whiteSpace: "nowrap",
-                      backgroundColor: "rgba(255,255,255,0.05)",
-                      padding: "30px 3%",
-                      borderRadius: "20px",
-                      display: "flex",
-                      justifyContent: "space-between",
-                      gap: "20px",
-                      fontSize: "14px",
-                      width: "100%",
-                      maxWidth: "330px",
-                    }}
-                  >
+                  <div style={{display: 'flex', flexDirection: 'column', flexGrow: 0.3, gap: "15px"}}>
+                    {/* Top */}
                     <div
                       style={{
-                        color: "rgba(255,166,0,0.7)",
+                        backgroundColor: "rgba(255,255,255,0.05)",
+                        padding: "30px 7%",
+                        borderRadius: "20px",
                         display: "flex",
-                        flexDirection: "column",
-                        alignItems: "flex-start",
-                        gap: "20px",
-                        flexWrap: "wrap",
+                        // justifyContent: "space-between",
+                        flexDirection: 'column',
+                        width: "100%",
                       }}
                     >
-                      <p>Start Date </p>
-                      <p>End Date </p>
-                      <p>Snapshot </p>
-                    </div>
-                    <div
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "flex-end",
-                        gap: "20px",
-                      }}
-                    >
-                      <p>{moment(proposal.start * 1000).format("lll")}</p>
-                      <p>{moment(proposal.end * 1000).format("lll")}</p>
-                      <a
+                      <h3 style={{marginTop: 0}}>
+                        Information
+                      </h3>
+                      <div
                         style={{
                           display: "flex",
-                          alignItems: "center",
-                          gap: "10px",
-                          color: "rgba(255,166,0,1)",
-                          textDecoration: "none",
+                          flexDirection: 'column',
+                          justifyContent: "space-between",
+                          gap: "20px",
+                          fontSize: "14px",
+                          width: "100%",
                         }}
-                        href={`https://etherscan.io/block/` + proposal.snapshot}
-                        target="_blank"
-                        rel="noreferrer"
                       >
-                        <p style={{ margin: 0 }}>{proposal.snapshot}</p>
-                        <IoExitOutline />
-                      </a>
+                        <div
+                          style={{
+                            color: "rgba(255,166,0,0.7)",
+                            display: "flex",
+                            flexDirection: "row",
+                            alignItems: "flex-start",
+                            gap: "20px",
+                            flexWrap: "wrap",
+                            justifyContent: "space-between",
+
+                          }}
+                        >
+                          <p>Start Date </p>
+                          <p style={{color: "rgba(255,166,0,1)",}}>{moment(proposal.start * 1000).format("lll")}</p>
+                        </div>
+                        <div
+                          style={{
+                            color: "rgba(255,166,0,0.7)",
+                            display: "flex",
+                            flexDirection: "row",
+                            alignItems: "flex-start",
+                            gap: "20px",
+                            flexWrap: "wrap",
+                            justifyContent: "space-between",
+                          }}
+                        >
+                          <p>End Date </p>
+                          <p style={{color: "rgba(255,166,0,1)",}}>{moment(proposal.end * 1000).format("lll")}</p>
+                        </div>
+                        <div
+                          style={{
+                            color: "rgba(255,166,0,0.7)",
+                            display: "flex",
+                            flexDirection: "row",
+                            alignItems: "flex-start",
+                            gap: "20px",
+                            flexWrap: "wrap",
+                            justifyContent: "space-between",
+                          }}
+                        >
+                          <p>Snapshot </p>
+                          <a
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "10px",
+                              color: "rgba(255,166,0,1)",
+                              textDecoration: "none",
+                            }}
+                            href={`https://etherscan.io/block/` + proposal.snapshot}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            <p style={{ margin: 0 }}>{proposal.snapshot}</p>
+                            <IoExitOutline />
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                    {/* Bottom */}
+                    <div
+                      style={{
+                        backgroundColor: "rgba(255,255,255,0.05)",
+                        padding: "30px 7%",
+                        borderRadius: "20px",
+                        display: "flex",
+                        // justifyContent: "space-between",
+                        flexDirection: 'column',
+                        width: "100%",
+                      }}
+                    >
+                      <h3 style={{marginTop: 0}}>
+                        Results
+                      </h3>
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: 'column',
+                          justifyContent: "space-between",
+                          gap: "20px",
+                          fontSize: "14px",
+                          width: "100%",
+                        }}
+                      >
+                        {
+                          proposal.choices.map((choice, choiceIndex) => {
+                            return (
+                              <div
+                                key={choiceIndex}
+                                style={{
+                                  pointerEvents: 'none',
+                                  display: 'flex',
+                                  justifyContent: 'between',
+                                
+                                }}
+                              >
+                                <p style={{ margin: 0, marginRight: "auto", color: "rgba(255,166,0,0.7)", }}>
+                                  {choice}
+                                </p>
+                                <div>
+                                  {nFormatter(proposal.scores[choiceIndex], 1)}{" "}
+                                  cogz
+                                </div>
+                              </div>
+                            );
+                          })
+                        }
+                      </div>
                     </div>
                   </div>
                 </div>
