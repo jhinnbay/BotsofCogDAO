@@ -134,7 +134,7 @@ export default function Home() {
   // console.log(isOpen)
   // console.log(votingPower)
   // console.log(votes)
-  console.log("PROPOSAL QUERY", proposalsQuery.data)
+  // console.log("PROPOSAL QUERY", proposalsQuery.data)
 
   //formats numbers
   const nFormatter = (num: number, digits: number) => {
@@ -163,22 +163,22 @@ export default function Home() {
     const proposalID = proposalsQuery?.data.proposals[proposalIndex].id;
     const proposalType = proposalsQuery?.data.proposals[proposalIndex].type;
     let choice: any;
-    console.log("HI")
+
     setIsOpen(true);
     // if (balance1 == 0 && balance2 == 0) {
     //   setModalIndex(3);
     //   return;
     // }
 
-    if (proposalType == "single-choice" && typeof(choiceIndex) == "number")
+    if (proposalType == "single-choice" && choiceIndex)
       choice = choiceIndex + 1;
     else if (proposalType == "quadratic") {
       choice = {};
       quadraticSelection[proposalIndex].map((selection, index) => {
         choice[(index + 1).toString()] = selection;
       });
-    } 
-    // else return;
+      console.log(choice);
+    } else return;
 
     setModalIndex(2);
 
@@ -197,7 +197,7 @@ export default function Home() {
         setVoteSuccess(true);
       }
     } catch (e) {
-      console.log("ERROR: ", e);
+      console.log(e);
       setModalIndex(1);
     }
   };
@@ -341,7 +341,6 @@ export default function Home() {
                 for (let j = i + 1; j < proposal.scores.length; j++) {
                   if (proposal.scores[i] <= proposal.scores[j]) {
                     max = false;
-                    // if (proposalIndex == 1) console.log("")
                   }
                 }
 
@@ -349,7 +348,6 @@ export default function Home() {
                   winner = i;
                 }
               }
-              if (winner == -1) winner = proposal.scores.length - 1
 
               return (
                 <div key={proposalIndex} className={styles.proposalContainer}>
@@ -479,12 +477,11 @@ export default function Home() {
                               </p>
                               <div>
                                 {nFormatter(proposal.scores[choiceIndex], 1)}{" "}
-                                cogz
+                                votes
                               </div>
                             </button>
                           );
-                        })
-                      }
+                        })}
                       {proposal.type == "quadratic" && (
                         <>
                           {proposal.choices.map((choice, choiceIndex) => {
@@ -494,19 +491,14 @@ export default function Home() {
                                 // onClick={() => {handleVote(proposalIndex, choiceIndex)}}
                                 className={styles.proposalButton}
                                 style={{
-                                  ...((choiceIndex == winner &&
-                                    proposal.state == "closed")
-                                    ? { backgroundColor: "rgba(255,255,255,0.2)" }
-                                    : {}),
+                                  backgroundColor: "rgba(255,255,255,0)",
                                 }}
                               >
                                 {votes[proposalIndex] == choiceIndex + 1 ||
                                   (choiceIndex == winner &&
                                     proposal.state == "closed" && (
                                       <IoCheckmarkOutline size={18} />
-                                    )
-                                  )
-                                }
+                                    ))}
                                 <p style={{ margin: 0, marginRight: "auto" }}>
                                   {choice}
                                 </p>
@@ -574,7 +566,7 @@ export default function Home() {
                                   {Math.round(
                                     proposal.scores[choiceIndex] * 100
                                   ) / 100}{" "}
-                                  cogz
+                                  votes
                                 </div>
                               </div>
                             );
