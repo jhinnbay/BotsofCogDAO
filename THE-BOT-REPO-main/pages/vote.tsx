@@ -100,7 +100,6 @@ export default function Home() {
   const client = new snapshot.Client712(hub);
   const router = useRouter();
   const address = useAddress();
-
   const sdk = useSDK();
   const web3 = sdk?.getSigner()?.provider;
 
@@ -109,18 +108,7 @@ export default function Home() {
 
   const proposalsQuery = useQuery(GET_PROPOSALS);
 
-  const [votes, setVotes] = useState<number[]>([]);
-  const [votingPower, setVotingPower] = useState<number[]>([]);
-  const [voteSuccess, setVoteSuccess] = useState<boolean>(false);
-  const [modalIndex, setModalIndex] = useState<number>(0);
-  const [quadraticSelection, setQuadraticSelection] = useState<number[][]>([]);
-  // nessecary for parsing markdown images
-  const [proposalBodies, setProposalBodies] = useState<string[]>([])
-  const [balance1, setBalance1] = useState<number>()
-  const [balance2, setBalance2] = useState<number>()
-  const [width, setWidth] = useState<number>(0)
-
-  let markdownComponents = {
+  const markdownComponents = {
     //This custom renderer changes how images are rendered
     //we use it to constrain the max width of an image to its container
     img: (image:any) => {
@@ -128,26 +116,19 @@ export default function Home() {
         <img
           src={image.src}
           alt={image.alt}
-          style={{width: width / 3, minWidth: 200}}
+          style={{width: "500px"}}
         />
       )
     }
   };
-  useEffect(() => {
-    function handleResize() {
-      // Set window width/height to state
-      setWidth(window.innerWidth);
-    }
 
-    // Add event listener
-    window.addEventListener("resize", handleResize);
-     
-    // Call handler right away so state gets updated with initial window size
-    handleResize();
-    
-    // Remove event listener on cleanup
-    return () => window.removeEventListener("resize", handleResize);
-  }, [])
+  const [votes, setVotes] = useState<number[]>([]);
+  const [votingPower, setVotingPower] = useState<number[]>([]);
+  const [voteSuccess, setVoteSuccess] = useState<boolean>(false);
+  const [modalIndex, setModalIndex] = useState<number>(0);
+  const [quadraticSelection, setQuadraticSelection] = useState<number[][]>([]);
+  // nessecary for parsing markdown images
+  const [proposalBodies, setProposalBodies] = useState<string[]>([])
 
   useEffect(() => {
     proposalsQuery?.data?.proposals.map(
@@ -188,15 +169,8 @@ export default function Home() {
 
   const NFTBalance1 = useNFTBalance(contract1.contract, address, 0);
   const NFTBalance2 = useNFTBalance(contract2.contract, address, 0);
-
-  useEffect(() => {
-    setBalance1(NFTBalance1?.data ? parseInt(NFTBalance1.data._hex, 16) : 0)
-  }, [contract1, address, NFTBalance1])
-
-  useEffect(() => {
-    setBalance2(NFTBalance2?.data ? parseInt(NFTBalance2.data._hex, 16) : 0)
-  }, [contract2, address, NFTBalance2])
-
+  let balance1 = NFTBalance1?.data ? parseInt(NFTBalance1.data._hex, 16) : 0;
+  let balance2 = NFTBalance2?.data ? parseInt(NFTBalance2.data._hex, 16) : 0;
 
   const [isOpen, setIsOpen] = useState<boolean>(false);
 
@@ -204,7 +178,7 @@ export default function Home() {
   // console.log(isOpen)
   // console.log(votingPower)
   // console.log(votes)
-  // console.log("PROPOSAL QUERY", proposalsQuery.data)
+  console.log("PROPOSAL QUERY", proposalsQuery.data)
 
   //formats numbers
   const nFormatter = (num: number, digits: number) => {
@@ -260,14 +234,7 @@ export default function Home() {
     setModalIndex(2);
 
     try {
-      console.log({
-        space: SNAPSHOT_SPACE,
-        proposal: proposalID,
-        type: proposalType,
-        choice: choice,
-        reason: "",
-        app: "snapshot",
-      })
+      // console.log("TRIESSSSSSS")
       if (web3) {
         // @ts-ignore
         await client.vote(web3, address?address:"", {
@@ -281,8 +248,6 @@ export default function Home() {
         setModalIndex(0);
         setVoteSuccess(true);
       }
-      else throw new Error("web3 undefined")
-      console.log("success")
     } catch (e) {
       console.log("ERROR: ", e);
       setModalIndex(1);
