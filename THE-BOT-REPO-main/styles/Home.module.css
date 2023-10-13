@@ -369,8 +369,8 @@
 
 .proposalButton {
   flex-grow: 1;
-  justify-content: space-between;
-  padding: 10px 20px;
+  justify-content: center;
+  padding: 15px 20px;
   align-items: center;
   border-radius: 30px;
   background-color: rgba(255,255,255,0);
