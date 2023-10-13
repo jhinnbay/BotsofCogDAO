@@ -1,1 +1,1 @@
-export const SNAPSHOT_SPACE = 'jonomnom.eth'
+export const SNAPSHOT_SPACE = 'botsofcog.eth'

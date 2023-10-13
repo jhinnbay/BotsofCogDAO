@@ -235,10 +235,10 @@ export default function Home() {
     let choice: any;
 
     setIsOpen(true);
-    // if (balance1 == 0 && balance2 == 0) {
-    //   setModalIndex(3);
-    //   return;
-    // }
+    if (balance1 == 0 && balance2 == 0) {
+      setModalIndex(3);
+      return;
+    }
     if (!address) {
       setModalIndex(1)
       return
@@ -255,7 +255,7 @@ export default function Home() {
         choice[(index + 1).toString()] = selection;
       });
     }
-    // else return;
+    else return;
 
     setModalIndex(2);
 
@@ -570,7 +570,7 @@ export default function Home() {
                               </p>
                               {/* <div>
                                 {nFormatter(proposal.scores[choiceIndex], 1)}{" "}
-                                cogz
+                                COGz
                               </div> */}
                             </button>
                           );
@@ -684,7 +684,7 @@ export default function Home() {
                                   {Math.round(
                                     proposal.scores[choiceIndex] * 100
                                   ) / 100}{" "}
-                                  cogz
+                                  COGz
                                 </div> */}
                               </div>
                             );
@@ -703,7 +703,7 @@ export default function Home() {
                   </div>
 
                   {/* Right Column */}
-                  <div style={{display: 'flex', flexDirection: 'column', flexGrow: 0.3, gap: "15px"}}>
+                  <div style={{display: 'flex', flexDirection: 'column', flexGrow: 1, gap: "15px"}}>
                     {/* Top */}
                     <div
                       style={{
@@ -830,7 +830,7 @@ export default function Home() {
                                 </p>
                                 <div>
                                   {nFormatter(proposal.scores[choiceIndex], 1)}{" "}
-                                  cogz
+                                  COGz
                                 </div>
                               </div>
                             );
