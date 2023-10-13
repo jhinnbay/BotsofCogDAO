@@ -378,7 +378,7 @@ export default function Home() {
             <IoArrowBackOutline size={25} color="rgba(255,166,0,1)" />
           </button>
           <p>
-            Gen 1: {balance1} Gen 2: {balance2}
+            Voting Power: {votingPower} &nbsp;&nbsp; Gen 1: {balance1} &nbsp;&nbsp; Gen 2: {balance2}
           </p>
         </div>
         <h1 style={{ wordWrap: "break-word", color: "#64b4ff" }}>Proposals</h1>
