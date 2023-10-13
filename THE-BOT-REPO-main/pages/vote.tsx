@@ -521,7 +521,7 @@ export default function Home() {
                       </div>
 
                       <div>
-                        {/* <ReactMarkdown children={proposalBodies[proposalIndex]} components={markdownComponents}/> */}
+                        <ReactMarkdown children={proposalBodies[proposalIndex]} components={markdownComponents}/>
                       </div>
                     </div>
 
